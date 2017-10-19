@@ -44,6 +44,8 @@ int main(int argc, const char *argv[])
     config.storage_config = {argv[5]};
     config.use_shared_memory = false;
 
+    config.algorithm = EngineConfig::Algorithm::MLD;
+
     // Routing machine with several services (such as Route, Table, Nearest, Trip, Match)
     const OSRM osrm{config};
 
