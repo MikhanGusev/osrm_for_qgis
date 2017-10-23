@@ -1,0 +1,31 @@
+Using instructions for BARS project:
+
+1. Build OSRM fork with specific changes:
+
+    $ git clone https://github.com/MikhanGusev/osrm-backend.git
+    $ cd osrm-backend
+    $ cmake -DCMAKE_INSTALL_PREFIX="<osrm install dir>" -DBUILD_SHARED_LIBS=true <osrm build dir>
+    $ make
+    $ sudo make install
+    
+2. Build executable:
+
+    $ cd test-app
+    $ cmake <app build dir>
+    $ make
+    
+3. Download ready data (from ...) and skip step 4 or download raw data (from ...) and extract it with OSRM (warning: this will generate a lot of files, so place <my file>.osm.pbf into the separate directory):
+
+    $ cd <osrm install dir>
+    $ ./osrm-extract <my file>.osm.pbf -p <osrm install dir>/share/osrm/profiles/car.lua
+    $ ./osrm-partition <my file>.osrm
+    
+4. [INITIALIZATION STEP] Update graph data:
+
+    $ ./osrm-customize <my file>.osrm
+    
+5. [ROUTING STEP] Route graph data:
+
+    $ cd <app build dir>
+    $ ./osrm-test <lon start> <lat start> <lon end> <lat end> <my file>.osrm <my result>.geojson
+    # example: ./osrm-test 37.10985 55.57766 30.28147 59.87171 ../merged_lines.osrm ../path.geojson
