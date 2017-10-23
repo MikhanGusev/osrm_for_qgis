@@ -53,7 +53,7 @@ int main(int argc, const char *argv[])
     RouteParameters params;
 
     params.geometries = RouteParameters::GeometriesType::GeoJSON;
-    params.overview = RouteParameters::OverviewType::Simplified;
+    params.overview = RouteParameters::OverviewType::Full;
 
     // Route
     params.coordinates.push_back({fLonStart, fLatStart});

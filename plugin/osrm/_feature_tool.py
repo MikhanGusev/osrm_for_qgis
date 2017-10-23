@@ -6,7 +6,7 @@ from PyQt4.QtGui import *
 from qgis.core import *
 from qgis.gui import *
  
-class IdentifyGeometry(QgsMapToolIdentify):
+class IdentifyFeatureTool(QgsMapToolIdentify):
 
     layers_to_search = []
 

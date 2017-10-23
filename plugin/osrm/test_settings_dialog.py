@@ -22,6 +22,7 @@ class OSRMTestSettingsDialog(QtGui.QDialog, FORM_CLASS):
     PATH_EXE = None
     PATH_SRC_FILE = None
     PATH_TGT_FILE = None
+    ALLOW_ONLY_FEATURE_SELECTION = None
 
     
     def __init__(self, parent=None):
@@ -65,6 +66,8 @@ class OSRMTestSettingsDialog(QtGui.QDialog, FORM_CLASS):
         self.PATH_EXE = self.lineEdit.text()
         self.PATH_SRC_FILE = self.lineEdit_2.text()
         self.PATH_TGT_FILE = self.lineEdit_3.text()
+        
+        self.ALLOW_ONLY_FEATURE_SELECTION = self.checkBox.isChecked()
         
         try:
             config = ConfigParser.SafeConfigParser(allow_no_value=True)

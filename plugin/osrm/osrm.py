@@ -21,7 +21,8 @@ from osgeo import ogr
 from test_settings_dialog import OSRMTestSettingsDialog
 from test_results_dialog import OSRMTestResultsDialog
 
-from _feature_tool import IdentifyGeometry
+from _feature_tool import IdentifyFeatureTool
+from _cursor_tool import CursorTool
 
 
 class OSRM:
@@ -33,12 +34,16 @@ class OSRM:
     action_routing = None
     action_start_flag = None
     action_end_flag = None
+    action_start_coords_flag = None
+    action_end_coords_flag = None
     action_path = None
     
     map_tool = None
     
     toolbutton_start_flag = None
     toolbutton_end_flag = None
+    toolbutton_start_coords_flag = None
+    toolbutton_end_coords_flag = None    
     toolbutton_path = None
     
     LAYER_STARTFLAG = None
@@ -176,6 +181,24 @@ class OSRM:
             enabled_flag=False,
             status_tip=self.tr(u'Mark feature as end node'),
             add_to_toolbar = True)
+        self.action_start_coords_flag, self.toolbutton_start_coords_flag = self.add_action(        
+            menu=menu_main,
+            icon_path=self.plugin_dir+'/icons/start_pressed.png',
+            text=self.tr(u'Set start flag'),
+            callback=self.onStartCoordsFlagClicked,
+            parent=self.iface.mainWindow(),
+            enabled_flag=False,
+            status_tip=self.tr(u'Place a point on the map'),
+            add_to_toolbar = True)
+        self.action_end_coords_flag, self.toolbutton_end_coords_flag = self.add_action(        
+            menu=menu_main,
+            icon_path=self.plugin_dir+'/icons/end_pressed.png',
+            text=self.tr(u'Set end flag'),
+            callback=self.onEndCoordsFlagClicked,
+            parent=self.iface.mainWindow(),
+            enabled_flag=False,
+            status_tip=self.tr(u'Place a point on the map'),
+            add_to_toolbar = True)        
         self.action_path, self.toolbutton_path = self.add_action(       
             menu=menu_main,
             icon_path=self.plugin_dir+'/icons/path.png',
@@ -187,8 +210,8 @@ class OSRM:
             add_to_toolbar = True)
             
         # Initialize map tool.
-        self.map_tool = IdentifyGeometry(self.iface.mapCanvas())
-        QObject.connect(self.map_tool , SIGNAL("geomIdentified") , self.onIdentifyFeature)
+        #self.map_tool = IdentifyGeometry(self.iface.mapCanvas())
+        #QObject.connect(self.map_tool , SIGNAL("geomIdentified") , self.onIdentifyFeature)
 
         
     def unload(self):
@@ -216,7 +239,7 @@ class OSRM:
         self.dlg_settings.show()
         result = self.dlg_settings.my_exec_(self.plugin_dir)
         if result == 1:
-            self.reinit(self.dlg_settings.PATH_EXE,self.dlg_settings.PATH_SRC_FILE,self.dlg_settings.PATH_TGT_FILE)
+            self.reinit(self.dlg_settings.PATH_EXE, self.dlg_settings.PATH_SRC_FILE, self.dlg_settings.PATH_TGT_FILE, self.dlg_settings.ALLOW_ONLY_FEATURE_SELECTION)
         
     
     def onStartFlagClicked(self):
@@ -225,12 +248,24 @@ class OSRM:
         """
         self.clickFlagButton(self.toolbutton_start_flag, QIcon(self.plugin_dir+'/icons/start_pressed.png'))
         
-        
     def onEndFlagClicked(self):
         """
         ...
         """
         self.clickFlagButton(self.toolbutton_end_flag, QIcon(self.plugin_dir+'/icons/end_pressed.png'))
+        
+        
+    def onStartCoordsFlagClicked(self):
+        """
+        ...
+        """
+        self.clickFlagButton(self.toolbutton_start_coords_flag, QIcon(self.plugin_dir+'/icons/start_pressed.png'))
+        
+    def onEndCoordsFlagClicked(self):
+        """
+        ...
+        """
+        self.clickFlagButton(self.toolbutton_end_coords_flag, QIcon(self.plugin_dir+'/icons/end_pressed.png'))        
 
 
     def onPathClicked(self):
@@ -263,6 +298,7 @@ class OSRM:
         if self.PRESSED_TOOLB is None: # skip any actions if no flag button pressed
             return
         
+        # WARNING. Possibly we must check here the proper CRS!
         geom = feature.geometry()
         point = geom.asPoint()
         
@@ -276,6 +312,30 @@ class OSRM:
             self.placeFlag(self.toolbutton_end_flag,feature)
         
         self.clickFlagButton(self.PRESSED_TOOLB, None) # unpress any pressed flag button and unset map tool
+        
+        
+    def onIdentifyCursorCoords(self,point):
+        """
+        ...
+        """ 
+        if self.PRESSED_TOOLB is None: # skip any actions if no flag button pressed
+            return
+
+        # TEMPORARY:
+        canvas = self.iface.mapCanvas()
+        transf = QgsCoordinateTransform(QgsCoordinateReferenceSystem(canvas.mapRenderer().destinationCrs().authid()), QgsCoordinateReferenceSystem(4326))
+        transf_point = transf.transform(point)
+        
+        if self.PRESSED_TOOLB == self.toolbutton_start_coords_flag:
+            self.LAT_START = transf_point.y()
+            self.LON_START = transf_point.x()
+            self.placeFlagByCoords(self.toolbutton_start_coords_flag,transf_point)
+        elif self.PRESSED_TOOLB == self.toolbutton_end_coords_flag:
+            self.LAT_END = transf_point.y()
+            self.LON_END = transf_point.x()
+            self.placeFlagByCoords(self.toolbutton_end_coords_flag,transf_point)
+        
+        self.clickFlagButton(self.PRESSED_TOOLB, None) # unpress any pressed flag button and unset map tool        
 
         
     #**********************************************************************************************************#
@@ -285,7 +345,7 @@ class OSRM:
     #**********************************************************************************************************#
     
     
-    def reinit(self,path_exe,path_src_file,path_tgt_file):
+    def reinit(self,path_exe,path_src_file,path_tgt_file,select_features):
         """
         ...
         """
@@ -304,7 +364,7 @@ class OSRM:
         
         # TODO: recreate groups
         root_layer_tree = QgsProject.instance().layerTreeRoot()
-        common_group = root_layer_tree.addGroup('OSRM')
+        common_group = root_layer_tree.insertGroup(0,'OSRM')
         flags_group = common_group.addGroup('Flags')
         results_group = common_group.addGroup('Results')
 
@@ -327,11 +387,24 @@ class OSRM:
         self.action_end_flag.setEnabled(True)
         self.action_path.setEnabled(True)
         
-        self.toolbutton_start_flag.setEnabled(True)
-        self.toolbutton_end_flag.setEnabled(True)
         self.toolbutton_path.setEnabled(True)
         
         self.action_prepare.setEnabled(False) # TEMPORARY
+        
+        if select_features == True:
+            self.toolbutton_start_flag.setEnabled(True)
+            self.toolbutton_end_flag.setEnabled(True)
+            self.toolbutton_start_coords_flag.setEnabled(False)
+            self.toolbutton_end_coords_flag.setEnabled(False)            
+            self.map_tool = IdentifyFeatureTool(self.iface.mapCanvas())
+            QObject.connect(self.map_tool , SIGNAL("geomIdentified") , self.onIdentifyFeature)
+        else:
+            self.toolbutton_start_flag.setEnabled(False)
+            self.toolbutton_end_flag.setEnabled(False)
+            self.toolbutton_start_coords_flag.setEnabled(True)
+            self.toolbutton_end_coords_flag.setEnabled(True)                
+            self.map_tool = CursorTool(self.iface.mapCanvas())
+            QObject.connect(self.map_tool , SIGNAL("geomIdentified") , self.onIdentifyCursorCoords)
     
     
     def placeFlag(self,toolb,feature):
@@ -357,8 +430,33 @@ class OSRM:
         new_feature.setGeometry(QgsGeometry.fromPoint(point))
         (res, outFeats) = layer_this.dataProvider().addFeatures([new_feature])
         layer_this.triggerRepaint() # Otherwise point in this layer will not be moved.
-    
-    
+        
+        
+    def placeFlagByCoords(self,toolb,point):
+        """
+        ...
+        """
+        if toolb == self.toolbutton_start_coords_flag:
+            layer_this = self.LAYER_STARTFLAG
+            layer_other = self.LAYER_ENDFLAG
+        elif toolb == self.toolbutton_end_coords_flag:
+            layer_this = self.LAYER_ENDFLAG
+            layer_other = self.LAYER_STARTFLAG
+        else:
+            return
+        
+        # Remove old flag feature.
+        ids = [f.id() for f in layer_this.getFeatures()]
+        layer_this.dataProvider().deleteFeatures(ids)
+        # Create new one.
+        new_feature = QgsFeature()
+        new_feature.setGeometry(QgsGeometry.fromPoint(point))
+        (res, outFeats) = layer_this.dataProvider().addFeatures([new_feature])
+        layer_this.triggerRepaint() # Otherwise point in this layer will not be moved.    
+        
+        #self.showMsg(str(point.x()) + " , " + str(point.y()))
+
+
     def createFlagsLayer(self,group,name,icon_path):
         """
         ...

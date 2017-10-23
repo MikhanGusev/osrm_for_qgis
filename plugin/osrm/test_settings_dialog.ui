@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>599</width>
-    <height>346</height>
+    <height>278</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -26,7 +26,7 @@
      <item row="0" column="2">
       <widget class="QLineEdit" name="lineEdit">
        <property name="text">
-        <string></string>
+        <string/>
        </property>
       </widget>
      </item>
@@ -40,7 +40,7 @@
      <item row="1" column="2">
       <widget class="QLineEdit" name="lineEdit_2">
        <property name="text">
-        <string></string>
+        <string/>
        </property>
       </widget>
      </item>
@@ -54,11 +54,21 @@
      <item row="2" column="2">
       <widget class="QLineEdit" name="lineEdit_3">
        <property name="text">
-        <string></string>
+        <string/>
        </property>
       </widget>
      </item>
     </layout>
+   </item>
+   <item>
+    <widget class="QCheckBox" name="checkBox">
+     <property name="text">
+      <string>Allow only feature selection for start and end points</string>
+     </property>
+     <property name="checked">
+      <bool>true</bool>
+     </property>
+    </widget>
    </item>
    <item>
     <spacer name="verticalSpacer">
