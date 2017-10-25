@@ -1,5 +1,10 @@
 Using instructions for BARS project:
 
+0. Install OSRM dependencies (Fedora 26, for other OSes see https://github.com/Project-OSRM/osrm-backend/wiki/Building-OSRM):
+
+    $ sudo yum install git cmake gcc-c++
+    $ sudo yum install libxml2-devel boost-devel boost-regex bzip2-devel libzip-devel stxxl-devel lua.x86_64 lua-devel.x86_64 luajit.x86_64 luajit-devel.x86_64 expat expat-devel tbb tbb-devel
+
 1. Build OSRM fork with specific changes:
 
     $ git clone https://github.com/MikhanGusev/osrm-backend.git

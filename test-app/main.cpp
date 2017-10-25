@@ -43,7 +43,6 @@ int main(int argc, const char *argv[])
     EngineConfig config;
     config.storage_config = {argv[5]};
     config.use_shared_memory = false;
-
     config.algorithm = EngineConfig::Algorithm::MLD;
 
     // Routing machine with several services (such as Route, Table, Nearest, Trip, Match)
@@ -51,11 +50,8 @@ int main(int argc, const char *argv[])
 
     // The following shows how to use the Route service; configure this service
     RouteParameters params;
-
     params.geometries = RouteParameters::GeometriesType::GeoJSON;
     params.overview = RouteParameters::OverviewType::Full;
-
-    // Route
     params.coordinates.push_back({fLonStart, fLatStart});
     params.coordinates.push_back({fLonEnd, fLatEnd});
 
@@ -73,6 +69,8 @@ int main(int argc, const char *argv[])
         auto &route = routes.values.at(0).get<json::Object>();
         const auto distance = route.values["distance"].get<json::Number>().value;
         const auto duration = route.values["duration"].get<json::Number>().value;
+        const auto weight = route.values["weight"].get<json::Number>().value;
+        const auto weight_name = route.values["weight_name"].get<json::String>().value;
 
         std::filebuf fb;
         fb.open(sOutPath, std::ios::out);
@@ -90,8 +88,12 @@ int main(int argc, const char *argv[])
 
         std::cout << "Distance: " << distance << " meter\n";
         std::cout << "Duration: " << duration << " seconds\n";
+        std::cout << "Weight: " << weight << "\n";
+        std::cout << "Weight name: " << weight_name << "\n";
+
         return EXIT_SUCCESS;
     }
+
     else if (status == Status::Error)
     {
         const auto code = result.values["code"].get<json::String>().value;
@@ -99,6 +101,7 @@ int main(int argc, const char *argv[])
 
         std::cout << "Code: " << code << "\n";
         std::cout << "Message: " << code << "\n";
+
         return EXIT_FAILURE;
     }
 }
