@@ -24,13 +24,14 @@ Using instructions for BARS project:
     $ cd <osrm install dir>
     $ ./osrm-extract <my file>.osm.pbf -p <osrm install dir>/share/osrm/profiles/car.lua
     $ ./osrm-partition <my file>.osrm
+    $ ./osrm-customize <my file>.osrm
     
 4. [INITIALIZATION STEP] Update graph data:
 
-    $ ./osrm-customize <my file>.osrm
+    ...
     
 5. [ROUTING STEP] Route graph data:
 
     $ cd <app build dir>
-    $ ./osrm-test <lon start> <lat start> <lon end> <lat end> <my file>.osrm <my result>.geojson
-    # example: ./osrm-test 37.10985 55.57766 30.28147 59.87171 ../merged_lines.osrm ../path.geojson
+    $ ./osrm-test <lon start> <lat start> <lon end> <lat end> <my file>.osrm <my results directory>
+    # example: ./osrm-test 37.10985 55.57766 30.28147 59.87171 ../data/merged_lines.osrm ../data/results
