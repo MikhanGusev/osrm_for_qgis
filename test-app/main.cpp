@@ -22,6 +22,24 @@
 #include <cstdlib>
 
 
+void renderJsonObject (std::string sOutPath, osrm::json::Object jObj)
+{
+    std::filebuf fb;
+    fb.open(sOutPath, std::ios::out);
+    std::ostream os(&fb);
+    osrm::util::json::render(os, jObj);
+    fb.close();
+}
+
+void renderJsonArray (std::string sOutPath, osrm::json::Array jArray)
+{
+    std::vector<char> out;
+    osrm::util::json::render(out, jArray);
+    std::ofstream file(sOutPath, std::ios::out);
+    std::copy(out.begin(), out.end(), std::ostreambuf_iterator<char>(file));
+}
+
+
 int main(int argc, const char *argv[])
 {
     if (argc < 7)
@@ -37,7 +55,7 @@ int main(int argc, const char *argv[])
     util::FloatLongitude fLonEnd {std::stod(argv[3])};
     util::FloatLatitude fLatEnd {std::stod(argv[4])};
 
-    std::string sOutPath = argv[6];
+    std::string sOutDirPath = argv[6];
 
     // Configure based on a .osrm base path, and no datasets in shared mem from osrm-datastore
     EngineConfig config;
@@ -54,6 +72,8 @@ int main(int argc, const char *argv[])
     params.overview = RouteParameters::OverviewType::Full;
     params.coordinates.push_back({fLonStart, fLatStart});
     params.coordinates.push_back({fLonEnd, fLatEnd});
+    params.steps = true;
+    params.annotations = true;
 
     // Response is in JSON format
     json::Object result;
@@ -64,22 +84,18 @@ int main(int argc, const char *argv[])
     if (status == Status::Ok)
     {
         auto &routes = result.values["routes"].get<json::Array>();
-
-        // Let's just use the first route
-        auto &route = routes.values.at(0).get<json::Object>();
+        auto &route = routes.values.at(0).get<json::Object>(); // the first route
         const auto distance = route.values["distance"].get<json::Number>().value;
         const auto duration = route.values["duration"].get<json::Number>().value;
         const auto weight = route.values["weight"].get<json::Number>().value;
         const auto weight_name = route.values["weight_name"].get<json::String>().value;
+        //auto &waypoints = result.values["waypoints"].get<json::Array>();
 
-        std::filebuf fb;
-        fb.open(sOutPath, std::ios::out);
-        std::ostream os(&fb);
-        json::Object jGeom = route.values["geometry"].get<json::Object>();
-        osrm::util::json::render(os, jGeom);
-        fb.close();
+        renderJsonObject(sOutDirPath + "/path.geojson", route.values["geometry"].get<json::Object>());
+        renderJsonArray(sOutDirPath + "/path_legs.geojson", route.values["legs"].get<json::Array>());
+        //renderJson(sOutDirPath + "/path_waypoints.json", waypoints);
 
-        // Warn users if extract does not contain the default coordinates from above
+        // Warn users if extract does not contain the default coordinates from above.
         if (distance == 0 || duration == 0)
         {
             std::cout << "Note: distance or duration is zero. ";
