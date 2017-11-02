@@ -1,4 +1,5 @@
-Using instructions for BARS project:
+Using instructions for BARS project
+-----------------------------------
 
 0. Install OSRM dependencies (Fedora 26, for other OSes see https://github.com/Project-OSRM/osrm-backend/wiki/Building-OSRM):
 
@@ -13,15 +14,9 @@ Using instructions for BARS project:
     $ make
     $ sudo make install
     
-2. Build executable:
-
-    $ cd test-app
-    $ cmake <app build dir>
-    $ make
-    
 3. Download ready data (from ...) and skip step 4 or download raw data (from ...) and extract it with OSRM (warning: this will generate a lot of files, so place <my file>.osm.pbf into the separate directory):
 
-    $ cd <osrm install dir>
+    $ cd <osrm install dir>/bin
     $ ./osrm-extract <my file>.osm.pbf -p <osrm install dir>/share/osrm/profiles/car.lua
     $ ./osrm-partition <my file>.osrm
     $ ./osrm-customize <my file>.osrm
@@ -32,6 +27,18 @@ Using instructions for BARS project:
     
 5. [ROUTING STEP] Route graph data:
 
-    $ cd <app build dir>
-    $ ./osrm-test <lon start> <lat start> <lon end> <lat end> <my file>.osrm <my results directory>
-    # example: ./osrm-test 37.10985 55.57766 30.28147 59.87171 ../data/merged_lines.osrm ../data/results
+    $ cd <osrm install dir>/bin
+    $ ./osrm-ng-route <lon start> <lat start> <lon end> <lat end> <my file>.osrm <my results directory>
+    
+    
+Test example for BARS project
+-----------------------------
+
+    $ cd /usr/local/bin
+    $ ./osrm-extract /home/mikhan/test_graph/merged_lines.osm.pbf -p /usr/local/share/osrm/profiles/test-ng-ias.lua
+    $ ./osrm-partition /home/mikhan/test_graph/merged_lines.osrm
+    $ ./osrm-customize /home/mikhan/test_graph/merged_lines.osrm
+    $ ./osrm-ng-route 37.10985 55.57766 30.28147 59.87171 /home/mikhan/test_graph/merged_lines.osrm ../test_graph/results
+
+
+
