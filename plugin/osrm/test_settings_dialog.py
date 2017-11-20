@@ -4,7 +4,6 @@ QGIS plugin: OSRM routing
 """
 
 import os
-import ConfigParser
 
 from PyQt4 import QtGui, uic
 from PyQt4.QtCore import pyqtSlot
@@ -19,12 +18,6 @@ FORM_CLASS, _ = uic.loadUiType(os.path.join(
 
 class OSRMTestSettingsDialog(QtGui.QDialog, FORM_CLASS):
 
-    PATH_EXE = None
-    PATH_SRC_FILE = None
-    PATH_TGT_DIR = None
-    ALLOW_ONLY_FEATURE_SELECTION = None
-
-
     def __init__(self, parent=None):
         """
         ...
@@ -35,27 +28,19 @@ class OSRMTestSettingsDialog(QtGui.QDialog, FORM_CLASS):
         self.butOk.clicked.connect(self.onOkClicked)
 
 
-    def my_exec_(self, plugin_path):
+    def my_exec_(self,path_exe,path_src_dir,path_tgt_dir,json_transport_allowed,int_max_time,allow_only_feature_selection):
         """
         ...
         """
-        self.plugin_path = plugin_path
-
-        try:
-            config = ConfigParser.SafeConfigParser(allow_no_value=True)
-            config.read(self.plugin_path+'/config')
-            path_exe = config.get('paths', 'exe_file_path')
-            path_src_file = config.get('paths', 'src_file_path')
-            path_tgt_dir = config.get('paths', 'tgt_dir_path')
-        except:
-            path_exe = ""
-            path_src_file = ""
-            path_tgt_dir = ""
-
         self.lineEdit.setText(path_exe)
-        self.lineEdit_2.setText(path_src_file)
+        self.lineEdit_2.setText(path_src_dir)
         self.lineEdit_3.setText(path_tgt_dir)
-
+        self.lineEdit_4.setText(json_transport_allowed)
+        self.lineEdit_5.setText(int_max_time)
+        if allow_only_feature_selection == True:
+            self.checkBox.setChecked(True)
+        else:
+            self.checkBox.setChecked(False)
         return self.exec_()
 
 
@@ -63,23 +48,6 @@ class OSRMTestSettingsDialog(QtGui.QDialog, FORM_CLASS):
         """
         ...
         """
-        self.PATH_EXE = self.lineEdit.text()
-        self.PATH_SRC_FILE = self.lineEdit_2.text()
-        self.PATH_TGT_DIR = self.lineEdit_3.text()
-
-        self.ALLOW_ONLY_FEATURE_SELECTION = self.checkBox.isChecked()
-
-        try:
-            config = ConfigParser.SafeConfigParser(allow_no_value=True)
-            config.add_section('paths')
-            config.set('paths', 'exe_file_path', self.PATH_EXE)
-            config.set('paths', 'src_file_path', self.PATH_SRC_FILE)
-            config.set('paths', 'tgt_dir_path', self.PATH_TGT_DIR)
-            with open(self.plugin_path+'/config', 'wb') as configfile:
-                config.write(configfile)
-        except:
-            pass
-
         self.accept()
 
 

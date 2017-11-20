@@ -23,6 +23,7 @@ from test_results_dialog import OSRMTestResultsDialog
 
 from _feature_tool import IdentifyFeatureTool
 from _cursor_tool import CursorTool
+from _settings import Settings
 
 
 class OSRM:
@@ -30,8 +31,9 @@ class OSRM:
     Plugin's entry point
     """
 
-    action_prepare = None
+    action_init = None
     action_routing = None
+    action_settings = None
     action_start_flag = None
     action_end_flag = None
     action_start_coords_flag = None
@@ -58,9 +60,7 @@ class OSRM:
     LAT_END = None
     LON_END = None
 
-    PATH_EXE = None
-    PATH_SRC_FILE = None
-    PATH_TGT_DIR = None
+    settings = None
 
 
     def __init__(self, iface):
@@ -89,7 +89,8 @@ class OSRM:
         self.toolbar = self.iface.addToolBar(u'OSRM')
         self.toolbar.setObjectName(u'OSRM')
 
-        #self.reinit('osrm-test','')
+        self.settings = Settings()
+        self.settings.read(os.path.dirname(__file__))
 
 
     def add_action(
@@ -145,11 +146,11 @@ class OSRM:
         """
         ...
         """
-        self.action_prepare, stub = self.add_action(
+        self.action_init, stub = self.add_action(
             menu=None,
             icon_path=None,
-            text=self.tr(u'Prepare graph'),
-            callback=self.onPrepareClick,
+            text=self.tr(u'Initialize'),
+            callback=self.onInitClick,
             parent=self.iface.mainWindow(),
             enabled_flag=True)
         self.action_routing, stub = self.add_action(
@@ -157,6 +158,13 @@ class OSRM:
             icon_path=None,
             text=self.tr(u'Routing'),
             callback=None,
+            parent=self.iface.mainWindow(),
+            enabled_flag=True)
+        self.action_settings, stub = self.add_action(
+            menu=None,
+            icon_path=None,
+            text=self.tr(u'Settings'),
+            callback=self.onSettingsClick,
             parent=self.iface.mainWindow(),
             enabled_flag=True)
 
@@ -209,10 +217,6 @@ class OSRM:
             status_tip=self.tr(u'Calculate the shortest path between start and end nodes'),
             add_to_toolbar = True)
 
-        # Initialize map tool.
-        #self.map_tool = IdentifyGeometry(self.iface.mapCanvas())
-        #QObject.connect(self.map_tool , SIGNAL("geomIdentified") , self.onIdentifyFeature)
-
 
     def unload(self):
         """
@@ -232,15 +236,31 @@ class OSRM:
     #                                                                                                          #
     #**********************************************************************************************************#
 
-    def onPrepareClick(self):
+    def onInitClick(self):
+        """
+        ...
+        """
+        self.init(self.settings.ALLOW_ONLY_FEATURE_SELECTION)
+            
+            
+    def onSettingsClick(self): 
         """
         ...
         """
         self.dlg_settings.show()
-        result = self.dlg_settings.my_exec_(self.plugin_dir)
+        result = self.dlg_settings.my_exec_(self.settings.PATH_EXE, self.settings.PATH_SRC_DIR, self.settings.PATH_TGT_DIR, self.settings.JSON_TRANSPORT_ALLOWED, self.settings.INT_MAX_TIME, self.settings.ALLOW_ONLY_FEATURE_SELECTION)
         if result == 1:
-            self.reinit(self.dlg_settings.PATH_EXE, self.dlg_settings.PATH_SRC_FILE, self.dlg_settings.PATH_TGT_DIR, self.dlg_settings.ALLOW_ONLY_FEATURE_SELECTION)
-
+            self.settings.PATH_EXE = self.dlg_settings.lineEdit.text()
+            self.settings.PATH_SRC_DIR = self.dlg_settings.lineEdit_2.text()
+            self.settings.PATH_TGT_DIR = self.dlg_settings.lineEdit_3.text()
+            self.settings.JSON_TRANSPORT_ALLOWED = self.dlg_settings.lineEdit_4.text()
+            self.settings.INT_MAX_TIME = self.dlg_settings.lineEdit_5.text()
+            if self.dlg_settings.checkBox.isChecked() == True:
+                self.settings.ALLOW_ONLY_FEATURE_SELECTION = True
+            else:
+                self.settings.ALLOW_ONLY_FEATURE_SELECTION = False
+            self.settings.write(os.path.dirname(__file__))
+            
 
     def onStartFlagClicked(self):
         """
@@ -273,7 +293,7 @@ class OSRM:
         ...
         """
         try:
-            output = subprocess.check_output([self.PATH_EXE, str(self.LON_START), str(self.LAT_START), str(self.LON_END), str(self.LAT_END), self.PATH_SRC_FILE, self.PATH_TGT_DIR], shell=False, stderr=subprocess.STDOUT)
+            output = subprocess.check_output([self.settings.PATH_EXE, str(self.LON_START), str(self.LAT_START), str(self.LON_END), str(self.LAT_END), self.settings.JSON_TRANSPORT_ALLOWED, self.settings.INT_MAX_TIME, self.settings.PATH_SRC_DIR, self.settings.PATH_TGT_DIR], shell=False, stderr=subprocess.STDOUT)
             returncode = 0
         except subprocess.CalledProcessError as e:
             output = e.output
@@ -286,10 +306,10 @@ class OSRM:
         ret = self.dlg_results.my_exec_() # show results in the dialog
         if returncode == 0:
             driver = ogr.GetDriverByName('GeoJSON')
-            ds = driver.Open(self.PATH_TGT_DIR + '/path.geojson', 0)
+            ds = driver.Open(self.settings.PATH_TGT_DIR + '/path.json', 0)
             layer = ds.GetLayer(0)
             self.updateResultLayer(layer, self.LAYER_PATH)
-
+        
 
     def onIdentifyFeature(self,layer,feature):
         """
@@ -345,7 +365,7 @@ class OSRM:
     #**********************************************************************************************************#
 
 
-    def reinit(self,path_exe,path_src_file,path_tgt_dir,select_features):
+    def init(self,select_features):
         """
         ...
         """
@@ -356,11 +376,7 @@ class OSRM:
         self.LAT_START = None
         self.LON_START = None
         self.LAT_END = None
-        self.LON_END = None
-
-        self.PATH_EXE = path_exe
-        self.PATH_SRC_FILE = path_src_file
-        self.PATH_TGT_DIR = path_tgt_dir
+        self.LON_END = None       
 
         # TODO: recreate groups
         root_layer_tree = QgsProject.instance().layerTreeRoot()
@@ -389,7 +405,7 @@ class OSRM:
 
         self.toolbutton_path.setEnabled(True)
 
-        self.action_prepare.setEnabled(False) # TEMPORARY
+        self.action_init.setEnabled(False)
 
         if select_features == True:
             self.toolbutton_start_flag.setEnabled(True)
