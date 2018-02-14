@@ -28,19 +28,32 @@ class OSRMTestSettingsDialog(QtGui.QDialog, FORM_CLASS):
         self.butOk.clicked.connect(self.onOkClicked)
 
 
-    def my_exec_(self,path_exe,path_src_dir,path_tgt_dir,json_transport_allowed,int_max_time,allow_only_feature_selection):
+    def my_exec_(self,path_exe_new,path_config_new,json_query_new,path_exe,path_src_dir,path_tgt_dir,json_params,allow_only_feature_selection,current_is_new):
         """
         ...
         """
+        
+        #osrm-ias-route:
+        self.lineEdit_4.setText(path_exe_new)
+        self.lineEdit_5.setText(path_config_new)
+        self.textEdit_2.setPlainText(json_query_new)
+        
+        # osrm-ias-route-predefined:
         self.lineEdit.setText(path_exe)
         self.lineEdit_2.setText(path_src_dir)
         self.lineEdit_3.setText(path_tgt_dir)
-        self.lineEdit_4.setText(json_transport_allowed)
-        self.lineEdit_5.setText(int_max_time)
+        self.textEdit.setPlainText(json_params)
+        
+        # common:
         if allow_only_feature_selection == True:
             self.checkBox.setChecked(True)
         else:
             self.checkBox.setChecked(False)
+        if current_is_new == True:
+            self.checkBox_2.setChecked(True)
+        else:
+            self.checkBox_2.setChecked(False)
+            
         return self.exec_()
 
 

@@ -24,6 +24,7 @@ from test_results_dialog import OSRMTestResultsDialog
 from _feature_tool import IdentifyFeatureTool
 from _cursor_tool import CursorTool
 from _settings import Settings
+from _external_config import PropertiesParser
 
 
 class OSRM:
@@ -248,17 +249,29 @@ class OSRM:
         ...
         """
         self.dlg_settings.show()
-        result = self.dlg_settings.my_exec_(self.settings.PATH_EXE, self.settings.PATH_SRC_DIR, self.settings.PATH_TGT_DIR, self.settings.JSON_TRANSPORT_ALLOWED, self.settings.INT_MAX_TIME, self.settings.ALLOW_ONLY_FEATURE_SELECTION)
+        
+        result = self.dlg_settings.my_exec_(self.settings.PATH_EXE_NEW, self.settings.PATH_CONFIG_NEW, self.settings.JSON_QUERY_NEW, self.settings.PATH_EXE, self.settings.PATH_SRC_DIR, self.settings.PATH_TGT_DIR, self.settings.JSON_PARAMS, self.settings.ALLOW_ONLY_FEATURE_SELECTION, self.settings.CURRENT_IS_NEW)
+        
         if result == 1:
+            
+            self.settings.PATH_EXE_NEW = self.dlg_settings.lineEdit_4.text()
+            self.settings.PATH_CONFIG_NEW = self.dlg_settings.lineEdit_5.text()
+            self.settings.JSON_QUERY_NEW = self.dlg_settings.textEdit_2.toPlainText()
+            
             self.settings.PATH_EXE = self.dlg_settings.lineEdit.text()
             self.settings.PATH_SRC_DIR = self.dlg_settings.lineEdit_2.text()
             self.settings.PATH_TGT_DIR = self.dlg_settings.lineEdit_3.text()
-            self.settings.JSON_TRANSPORT_ALLOWED = self.dlg_settings.lineEdit_4.text()
-            self.settings.INT_MAX_TIME = self.dlg_settings.lineEdit_5.text()
+            self.settings.JSON_PARAMS = self.dlg_settings.textEdit.toPlainText()
+            
             if self.dlg_settings.checkBox.isChecked() == True:
                 self.settings.ALLOW_ONLY_FEATURE_SELECTION = True
             else:
                 self.settings.ALLOW_ONLY_FEATURE_SELECTION = False
+            if self.dlg_settings.checkBox_2.isChecked() == True:
+                self.settings.CURRENT_IS_NEW = True
+            else:
+                self.settings.CURRENT_IS_NEW = False
+
             self.settings.write(os.path.dirname(__file__))
             
 
@@ -288,29 +301,53 @@ class OSRM:
         self.clickFlagButton(self.toolbutton_end_coords_flag, QIcon(self.plugin_dir+'/icons/end_pressed.png'))
 
 
+        
     def onPathClicked(self):
         """
         ...
         """
+        
+        # Try to execute external process.
         try:
-            output = subprocess.check_output([self.settings.PATH_EXE, str(self.LON_START), str(self.LAT_START), str(self.LON_END), str(self.LAT_END), self.settings.JSON_TRANSPORT_ALLOWED, self.settings.INT_MAX_TIME, self.settings.PATH_SRC_DIR, self.settings.PATH_TGT_DIR], shell=False, stderr=subprocess.STDOUT)
+            
+            if self.settings.CURRENT_IS_NEW:
+                output = subprocess.check_output([self.settings.PATH_EXE_NEW, str(self.LON_START), str(self.LAT_START), str(self.LON_END), str(self.LAT_END), self.settings.JSON_QUERY_NEW, self.settings.PATH_CONFIG_NEW], shell=False, stderr=subprocess.STDOUT)
+            else:
+                output = subprocess.check_output([self.settings.PATH_EXE, str(self.LON_START), str(self.LAT_START), str(self.LON_END), str(self.LAT_END), self.settings.JSON_PARAMS, self.settings.PATH_SRC_DIR, self.settings.PATH_TGT_DIR], shell=False, stderr=subprocess.STDOUT)
+                
             returncode = 0
+            
+        # Parse output.
         except subprocess.CalledProcessError as e:
+            
             output = e.output
             returncode = e.returncode
+            
         #except:
         #    output = 'Error'
         #    returncode = -1
+        
         self.dlg_results.textEdit.setText(output)
         self.dlg_results.show()
         ret = self.dlg_results.my_exec_() # show results in the dialog
+        
+        # Create and show layer with the shortest path.
         if returncode == 0:
+            
             driver = ogr.GetDriverByName('GeoJSON')
-            ds = driver.Open(self.settings.PATH_TGT_DIR + '/path.json', 0)
+            
+            if self.settings.CURRENT_IS_NEW:
+                pp = PropertiesParser()
+                results_dir_path = pp.parse(self.settings.PATH_CONFIG_NEW)
+                ds = driver.Open(results_dir_path + '/path.json', 0)
+            else:
+                ds = driver.Open(self.settings.PATH_TGT_DIR + '/path.json', 0)
+            
             layer = ds.GetLayer(0)
             self.updateResultLayer(layer, self.LAYER_PATH)
         
 
+        
     def onIdentifyFeature(self,layer,feature):
         """
         Select only one feature among point layers in the project
