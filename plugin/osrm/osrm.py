@@ -311,7 +311,7 @@ class OSRM:
         try:
             
             if self.settings.CURRENT_IS_NEW:
-                output = subprocess.check_output([self.settings.PATH_EXE_NEW, str(self.LON_START), str(self.LAT_START), str(self.LON_END), str(self.LAT_END), self.settings.JSON_QUERY_NEW, self.settings.PATH_CONFIG_NEW], shell=False, stderr=subprocess.STDOUT)
+                output = subprocess.check_output([self.settings.PATH_EXE_NEW, str(self.LON_START), str(self.LAT_START), str(self.LON_END), str(self.LAT_END), self.settings.JSON_QUERY_NEW, self.settings.PATH_CONFIG_NEW, "path.json"], shell=False, stderr=subprocess.STDOUT)
             else:
                 output = subprocess.check_output([self.settings.PATH_EXE, str(self.LON_START), str(self.LAT_START), str(self.LON_END), str(self.LAT_END), self.settings.JSON_PARAMS, self.settings.PATH_SRC_DIR, self.settings.PATH_TGT_DIR], shell=False, stderr=subprocess.STDOUT)
                 
